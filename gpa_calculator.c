@@ -9,11 +9,12 @@ struct subjects{
     float final_pourcentage;
     float attendanceLab;
     float attendanceLab_pourcentage;
+    int subjectCoeficient;
 
 };
 int subject_count(FILE *file){
     if (file == NULL) return 0;
-    int count = 0;
+    int count = 1;
     char ch;
     
     while ((ch = fgetc(file)) != EOF) {
@@ -35,22 +36,23 @@ void load_grades(int subject_count, struct subjects subjects[], FILE *file){
     int count = 0;
     while (fgets(line, sizeof(line), file) != NULL && count < subject_count) {
         //calculus,85(17),90(27),95(40)
-        sscanf(line, "%49[^,],%f(%f),%f(%f),%f(%f),%f(%f)", subjects[count].name, &subjects[count].average_quiz,&subjects[count].quiz_pourcentage, &subjects[count].midterm,&subjects[count].midterm_pourcentage, &subjects[count].finalExam,&subjects[count].final_pourcentage, &subjects[count].attendanceLab,&subjects[count].attendanceLab_pourcentage);
+        sscanf(line, "%49[^,],%f(%f),%f(%f),%f(%f),%f(%f),%d", subjects[count].name, &subjects[count].average_quiz,&subjects[count].quiz_pourcentage, &subjects[count].midterm,&subjects[count].midterm_pourcentage, &subjects[count].finalExam,&subjects[count].final_pourcentage, &subjects[count].attendanceLab,&subjects[count].attendanceLab_pourcentage, &subjects[count].subjectCoeficient);
         count++;
     }
     fclose(file);
 }
 void save_subjects(int subject_count, struct subjects subjects[]){
-    FILE *f = fopen("grades.txt", "w*"); 
+    FILE *f = fopen("grade.txt", "w"); 
     if (f == NULL) {
         printf("Error opening file\n");
         return;
     }
     for (int i = 0; i < subject_count; i++) {
-        fprintf(f, "%s,%f(%f),%f(%f),%f(%f),%f(%f)\n", subjects[i].name, subjects[i].average_quiz, subjects[i].quiz_pourcentage, subjects[i].midterm, subjects[i].midterm_pourcentage, subjects[i].finalExam, subjects[i].final_pourcentage, subjects[i].attendanceLab, subjects[i].attendanceLab_pourcentage);
+        fprintf(f, "%s,%f(%f),%f(%f),%f(%f),%f(%f),%d\n", subjects[i].name, subjects[i].average_quiz, subjects[i].quiz_pourcentage, subjects[i].midterm, subjects[i].midterm_pourcentage, subjects[i].finalExam, subjects[i].final_pourcentage, subjects[i].attendanceLab, subjects[i].attendanceLab_pourcentage, subjects[i].subjectCoeficient);
     }
     fclose(f);
 }
+
 float grade_to_gpa(float grade) {
     if (grade >= 97) return 4.0;
     else if (grade >= 93) return 4.0;
@@ -65,20 +67,38 @@ float grade_to_gpa(float grade) {
     else if (grade >= 65) return 1.0;
     else return 0.0;
 }
-float grade_computer(float score[], int scoreNumber, int scorePourcentage) {
-    float totalScore = 0;
 
-    for(int i = 0; i < scoreNumber; i++) {
-        totalScore += score[i];
+float grade_computer(float finalGrade, int scorePourcentage) {
+    return (finalGrade * scorePourcentage) / 100.0;
+}
+float final_score_computer(struct subjects subject) {
+    float totalPourcentage = 0;
+
+  
+       totalPourcentage = subject.average_quiz * (subject.quiz_pourcentage / 100) + subject.midterm * (subject.midterm_pourcentage / 100) + subject.finalExam * (subject.final_pourcentage / 100) + subject.attendanceLab * (subject.attendanceLab_pourcentage / 100);
+   
+   return totalPourcentage;
+
+
+}
+float compute_gpa(int subjectNumber, struct subjects subject[]) {
+    float totalGPA = 0;
+    int totalCoeficient = 0;
+
+    for (int i = 0; i < subjectNumber; i++) {
+        //float final_grade = subject[i].average_quiz * (subject[i].quiz_pourcentage / 100) + subject[i].midterm * (subject[i].midterm_pourcentage / 100) + subject[i].finalExam * (subject[i].final_pourcentage / 100) + subject[i].attendanceLab * (subject[i].attendanceLab_pourcentage / 100);
+        float final_grade = final_score_computer(subject[i]);
+        float finalGrade = grade_computer(final_grade, 100);
+        float gpa = grade_to_gpa(finalGrade);
+        totalGPA += gpa * subject[i].subjectCoeficient;
+    
+// }
+        totalCoeficient += subject[i].subjectCoeficient;
     }
 
-    float average = totalScore / scoreNumber;
-    return (average * scorePourcentage) / 100.0;
+    return totalGPA / totalCoeficient;
 }
-float final_grade_computer(float quizPourcentage,float midtermPourcentage,float finalPourcentage){
-    float totalPourcentage = quizPourcentage + midtermPourcentage + finalPourcentage;
-    return totalPourcentage;
-}
+
 
 float average_quiz(float quiz[], int quizNumber) {
     float totalQuiz = 0;
@@ -95,8 +115,12 @@ float average_quiz(float quiz[], int quizNumber) {
 int main(){
     int choice = 0;
     int subjectNumber = 0;
-    
-    printf("PEACE N LOVE \n");
+    printf("\t Welcome to the GPA calculator\n");
+    printf("\t This program will help you calculate your GPA based on your grades\n");
+    printf("\t You can either enter your grades manually or load them from a file\n");
+    printf("\t if u want to compute your grades from a file modify the grade.txt file and put your grades in it\n");
+    printf("Press enter to continue...\n");
+    getchar();
     printf("Press 1 if  you want to enter grades\n ");
     printf("Press 2 if you want to compute your gpa from grade.txt\n");
     printf("Press 3 if you want to compute your average gpa in 1 subject\n");
@@ -110,15 +134,10 @@ int main(){
         // Load default subjects from file if user chooses 'y'
         //will only ask for grades
         if(subjectChoice == 'y' || subjectChoice == 'Y'){
-            printf("Do you want the default lab and attendance grades ? (y/n): ");
-            char labChoice;
-            scanf(" %c", &labChoice);
-            if (labChoice == 'y' || labChoice == 'Y') {
-                printf("Default lab and attendance grades will be used.\n");
-            } 
             int subjectNumber = subject_count(fopen("gradeDefault.txt", "r"));
             struct subjects subjects[subjectNumber];
             load_grades(subjectNumber, subjects, fopen("gradeDefault.txt", "r"));
+            
 
             printf("Default subjects loaded.\n");
             printf("You can now enter your grades for each subject.\n");
@@ -140,14 +159,25 @@ int main(){
 
                 printf("Enter your final exam grade in %s: ", subjects[i].name);
                 scanf("%f", &subjects[i].finalExam);
-
-                final_grade_computer(subjects[i].quiz_pourcentage, subjects[i].midterm_pourcentage, subjects[i].final_pourcentage);
-                for(int i = 0; i < subjectNumber; i++) {
-                    float finalGrade = grade_computer((float[]){subjects[i].average_quiz, subjects[i].midterm, subjects[i].finalExam}, 3, final_grade_computer(subjects[i].quiz_pourcentage, subjects[i].midterm_pourcentage, subjects[i].final_pourcentage));
+                printf("Do you want the default lab and attendance grades ? (y/n): ");
+                char labChoice;
+                scanf(" %c", &labChoice);
+                if (labChoice == 'y' || labChoice == 'Y') {
+                    printf("Default lab and attendance grades will be used.\n");
+                    subjects[i].attendanceLab = 100; // Default lab and attendance grade
+                }
+                else{
+                    printf("Enter your lab and attendance grade combined: ");
+                    scanf(" %f",&subjects[i].attendanceLab);
+                }
+            
+                
+                    float final_grade = subjects[i].average_quiz * (subjects[i].quiz_pourcentage / 100) + subjects[i].midterm * (subjects[i].midterm_pourcentage / 100) + subjects[i].finalExam * (subjects[i].final_pourcentage / 100) + subjects[i].attendanceLab * (subjects[i].attendanceLab_pourcentage / 100);
+                    float finalGrade = grade_computer(final_grade, 100);
                     float gpa = grade_to_gpa(finalGrade);
                     printf("Final grade for %s: %.2f\n", subjects[i].name, finalGrade);
                     printf("GPA for %s: %.2f\n", subjects[i].name, gpa);
-                }
+                
                 
             }
            
@@ -155,9 +185,8 @@ int main(){
             fclose(fopen("gradeDefault.txt", "r"));
             
 
-
-
         }else if(subjectChoice == 'n' || subjectChoice == 'N'){
+
             printf("How many subjects do you want to enter? ");
             scanf("%d", &subjectNumber);
             struct subjects subjects[subjectNumber];
@@ -174,8 +203,8 @@ int main(){
                 for(int i = 0;i < quizNumber;i++){
                 printf("Enter the quiz number %d: ",i + 1);
                 scanf("%f",&quizGrades[i]);
-
                 }
+
                 subjects[i].average_quiz = average_quiz(quizGrades, quizNumber);
                 printf("Enter the pourcentage of quizzes in %s: ", subjects[i].name);
                 scanf("%f", &subjects[i].quiz_pourcentage);
@@ -190,20 +219,31 @@ int main(){
                 save_subjects(subjectNumber, subjects);
         }
     }
+}
 
     // COMPUTE GPA from grade.txt
 
-    // if(choice == 2){
-    //     int subjectNumber = subject_count(fopen("grade.txt","r+"));
-       
-    //     struct subjects subjects[subjectNumber];
-    //     load_grades(subjectNumber, subjects, fopen("grade.txt", "r+"));
-        
-    //     printf("your gpa is %f",compute_gpa(subjectNumber, subjects));
-    // }
+    if(choice == 2){
+    FILE *f = fopen("grade.txt", "r");
+    if (f == NULL) {
+        printf("Error: grade.txt does not exist yet.\n");
+    } else {
+        int subjectNumber = subject_count(f);
+        struct subjects subjects[subjectNumber];
+        load_grades(subjectNumber, subjects, f);
+        printf("Do you want to know your grade in each subject(y/n)? ");
+        char choice;
+        scanf(" %c", &choice);
+        if (choice == 'y' || choice == 'Y') {
+            for (int i = 0; i < subjectNumber; i++) {
+                printf("Grade for %s: %.2f\n", subjects[i].name, final_score_computer(subjects[i]));
+            }
+        }
+        if (subjectNumber > 0)
+            printf("your gpa is %f\n", compute_gpa(subjectNumber, subjects));
+        else
+            printf("no grade found in grade.txt\n");
+    }
+}
     return 0;
 }
-}
-
-
-    
