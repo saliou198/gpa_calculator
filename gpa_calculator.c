@@ -81,12 +81,13 @@ float final_score_computer(struct subjects subject) {
 
 
 }
+
+// will compute the gpa based on the grades and the pourcentage of each grade and the coeficient of each subject
 float compute_gpa(int subjectNumber, struct subjects subject[]) {
     float totalGPA = 0;
     int totalCoeficient = 0;
 
     for (int i = 0; i < subjectNumber; i++) {
-        //float final_grade = subject[i].average_quiz * (subject[i].quiz_pourcentage / 100) + subject[i].midterm * (subject[i].midterm_pourcentage / 100) + subject[i].finalExam * (subject[i].final_pourcentage / 100) + subject[i].attendanceLab * (subject[i].attendanceLab_pourcentage / 100);
         float final_grade = final_score_computer(subject[i]);
         float finalGrade = grade_computer(final_grade, 100);
         float gpa = grade_to_gpa(finalGrade);
