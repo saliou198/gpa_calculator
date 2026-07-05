@@ -8,8 +8,8 @@
       "args": [],
       "stopAtEntry": false,
       "externalConsole": false,
-      "cwd": "/home/salioudieng/Documents/gpa_calculator",
-      "program": "/home/salioudieng/Documents/gpa_calculator/build/Debug/outDebug",
+      "cwd": "/home/larper/Documents/gpa_calculator",
+      "program": "/home/larper/Documents/gpa_calculator/build/Debug/outDebug",
       "MIMode": "gdb",
       "miDebuggerPath": "gdb",
       "setupCommands": [
